@@ -2,7 +2,7 @@
 This project tries to control a mobile refrigerator temperature and monitoring it's position,
 using an ESP8266 D1 mini, a module GPS NEO-6m and DHT11 sensor.
 
-For the code were used the library's THINGSPEAK, TinyGPS++, DHTesp, ESP8266wifi and SoftwareSerial are being used.
+For the code were used the library's THINGSPEAK, TinyGPS++, DHTesp, ESP8266wifi and SoftwareSerial.
 (ThingSpeak --- https://github.com/mathworks/thingspeak-arduino/tree/master/examples
  TinyGPS++ --- http://arduiniana.org/libraries/tinygpsplus/
  DHTesp --- https://github.com/beegee-tokyo/DHTesp
