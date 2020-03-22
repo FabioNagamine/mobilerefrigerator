@@ -1,19 +1,19 @@
 /*------header------
 
     SENAI Technology College "Mariano Ferraz"
-    Sao Paulo, 02/18/2020
+    Sao Paulo, 03/24/2020
     Postgraduate - Internet of Things
     Sensors and Identification and Tracking Systems
 
     Names of postgraduate students: 
     Lecturer: Fábio Takashi Nagamine
-              Felipe
-              Leonardo
+              Felipe Thadeu Noro Affonso
+              Leonardo Tarrou
 
     Goals: use an ESP8266 with a DHT11 and a GPS modules to monitoring the temperature and geolocation 
     of a pharmaceutical products
 
-    Hardware: ESP8266 D1 mini, DHT11 module and GPS module 
+    Hardware: ESP8266 D1 mini, DHT11 module, GPS module and Relay module
 
 
     Reviews: 
@@ -23,7 +23,6 @@
 
 
 #include "ThingSpeak.h"                                 //ThingSpeak Library
-#include "secrets.h"                                    //
 #include <ESP8266WiFi.h>                                //ESP8266WiFi Library
 #include "DHTesp.h"                                     //DHTesp Library         
 #include <TinyGPS++.h>                                  // Tiny GPS Plus Library
@@ -35,8 +34,8 @@
 #endif
 
 
-char ssid[] = "teste";//"F106_CS10";   // your network SSID (name) 
-char pass[] = "realtime";//"Senai4.0";   // your network password
+char ssid[] = "teste"; // your network SSID (name) 
+char pass[] = "realtime"; // your network password
 int keyIndex = 0;            // your network key Index number (needed only for WEP)
 bool Geladeira;
 static const int RXPin = 12, TXPin = 13;                // Ublox 6m GPS module to pins 12 and 13
@@ -49,13 +48,6 @@ WiFiClient  client;
 DHTesp dht;
 TinyGPSPlus gps;                                        // Create an Instance of the TinyGPS++ object called gps
 SoftwareSerial ss(RXPin, TXPin);                        // The serial connection to the GPS device
-
-// Initialize our values
-int number1 = 0;
-int number2 = random(0,100);
-int number3 = random(0,100);
-int number4 = random(0,100);
-String myStatus = "";
 
 
 void setup() {
@@ -71,7 +63,6 @@ void setup() {
 
   dht.setup(DHTpin, DHTesp::DHT11); // Connect DHT sensor to GPIO 13
   pinMode(rele, OUTPUT);
-  Serial.println("GPS example");  
   Serial.println(TinyGPSPlus::libraryVersion());
   ss.begin(GPSBaud);
   
@@ -88,12 +79,9 @@ void loop() {
   Serial.print(humidity, 1);
   Serial.print("\t\t");
   Serial.println(temperature, 1);
-  float latitude= gps.location.lat();
-  float longitude= gps.location.lng();  
-  delay(2000);
 
   //Control the refrigerator
-  if(20.0<temperature){
+  if(temperature<2.0){
     Geladeira=1;
     digitalWrite(rele,HIGH);
   }else{
@@ -104,7 +92,7 @@ void loop() {
   // Connect or reconnect to WiFi
   if(WiFi.status() != WL_CONNECTED){
     Serial.print("Attempting to connect to SSID: ");
-    Serial.println(SECRET_SSID);
+    Serial.println(ssid);
     while(WiFi.status() != WL_CONNECTED){
       WiFi.begin(ssid, pass);  // Connect to WPA/WPA2 network. Change this line if using open or WEP network
       Serial.print(".");
@@ -112,6 +100,10 @@ void loop() {
     } 
     Serial.println("\nConnected.");
   }
+  //Get position from Satelite
+  float latitude= gps.location.lat();
+  float longitude= gps.location.lng();  
+  delay(2000);
 
   // set the fields with the values
   ThingSpeak.setField(1, temperature);
@@ -119,21 +111,7 @@ void loop() {
   ThingSpeak.setField(3, Geladeira);
   ThingSpeak.setField(4, latitude);
   ThingSpeak.setField(5, longitude);
-
-  /* figure out the status message
-  if(number1 > number2){
-    myStatus = String("field1 is greater than field2"); 
-  }
-  else if(number1 < number2){
-    myStatus = String("field1 is less than field2");
-  }
-  else{
-    myStatus = String("field1 equals field2");
-  }
-  */
-  // set the status
-  ThingSpeak.setStatus(myStatus);
-  
+ 
   // write to the ThingSpeak channel
   int x = ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);
   if(x == 200){
@@ -142,9 +120,9 @@ void loop() {
   else{
     Serial.println("Problem updating channel. HTTP error code " + String(x));
   }  
+ 
 
   // change the values
-  number4 = random(0,100);  
   Serial.print("Latitude  : ");
   Serial.println(gps.location.lat(), 5);
   Serial.print("Longitude : ");
@@ -152,20 +130,20 @@ void loop() {
   
   smartDelay(500);                                      // Run Procedure smartDelay
 
-  if (millis() > 5000 && gps.charsProcessed() < 10)
+  if (millis() > 5000 && gps.charsProcessed() < 10){
     Serial.println(F("No GPS data received: check wiring"));
- // ESP.deepSleep(1 * 60000000);// Put the esp8266 in deep sleep mode for 1 minute to save battery
+ ESP.deepSleep(1 * 60000000);// Put the esp8266 in deep sleep mode for 1 minute to save battery
 
 
-
+  }
 }
 
-static void smartDelay(unsigned long ms)                // This custom version of delay() ensures that the gps object is being "fed".
-{
-  unsigned long start = millis();
-  do 
+  static void smartDelay(unsigned long ms)                // This custom version of delay() ensures that the gps object is being "fed".
   {
-    while (ss.available())
-      gps.encode(ss.read());
-  } while (millis() - start < ms);
-}
+    unsigned long start = millis();
+    do 
+    {
+      while (ss.available())
+        gps.encode(ss.read());
+    } while (millis() - start < ms);
+  }
