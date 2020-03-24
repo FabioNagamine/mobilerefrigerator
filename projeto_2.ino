@@ -132,10 +132,11 @@ void loop() {
 
   if (millis() > 5000 && gps.charsProcessed() < 10){
     Serial.println(F("No GPS data received: check wiring"));
+  }    
  ESP.deepSleep(1 * 60000000);// Put the esp8266 in deep sleep mode for 1 minute to save battery
 
 
-  }
+  
 }
 
   static void smartDelay(unsigned long ms)                // This custom version of delay() ensures that the gps object is being "fed".
